@@ -142,3 +142,9 @@ export async function skipRate(e: Engine): Promise<{ month: string; pct: number;
     SELECT month, count(*) FILTER (NOT is_play) / count(*) AS pct, count(*) AS streams FROM s GROUP BY month ORDER BY month`)
   return rows.map((r) => ({ month: monthKey(r.month), pct: n(r.pct) * 100, streams: n(r.streams) }))
 }
+
+/** artist -> rank by minutes (1-based), for the top `limit` artists. */
+export async function artistRanks(e: Engine, limit = 500): Promise<Record<string, number>> {
+  const rows = await e.query(`SELECT artist, row_number() OVER (ORDER BY sum(mins) DESC) AS r FROM s GROUP BY artist ORDER BY r LIMIT ${limit}`)
+  return Object.fromEntries(rows.map((r) => [String(r.artist), n(r.r)]))
+}

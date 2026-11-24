@@ -14,6 +14,7 @@ export async function buildReport(ds: Dataset, timeZone: string) {
     totals,
     topArtists: await Q.topArtists(e),
     topTracks: await Q.topTracks(e),
+    artistRanks: await Q.artistRanks(e),
     genres: hasGenres ? await Q.genres(e) : undefined,
     clock: await Q.clock(e),
     biggestDay: await Q.biggestDay(e),
