@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import { buildReport, type Report } from './analytics/report'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import type { Report } from './analytics/report'
 import { TopBar, type View } from './components/TopBar'
 import { UploadScreen } from './components/UploadScreen'
 import { loadFiles, type Dataset, type InputFile } from './loaders'
-import { Dashboard } from './dashboard/Dashboard'
-import { ExportButton } from './export/ExportButton'
-import { buildCards } from './story/cards'
-import { StoryPlayer } from './story/StoryPlayer'
 import { demoFiles } from './upload/demo'
+
+// Heavy parts (DuckDB, ECharts, cards, dashboard) load only once there is data to show.
+const StoryView = lazy(() => import('./story/StoryView'))
+const Dashboard = lazy(() => import('./dashboard/Dashboard').then((m) => ({ default: m.Dashboard })))
 
 const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone
 
@@ -45,7 +45,8 @@ export default function App() {
     if (!data) return
     let live = true
     setReport(undefined)
-    buildReport(data, timeZone)
+    import('./analytics/report')
+      .then(({ buildReport }) => buildReport(data, timeZone))
       .then((r) => {
         if (!live) return
         setReport(r)
@@ -55,8 +56,6 @@ export default function App() {
     return () => void (live = false)
   }, [data, timeZone])
 
-  const cards = useMemo(() => (report ? buildCards(report) : []), [report])
-
   if (!data) return <UploadScreen busy={busy} error={error} onFiles={(f) => ingest(() => f, false)} onDemo={() => ingest(demoFiles, true)} />
 
   return (
@@ -64,13 +63,15 @@ export default function App() {
       <TopBar view={view} onView={setView} timeZone={timeZone} onTimeZone={setTimeZone} isDemo={isDemo} onReset={() => (setData(undefined), setReport(undefined))} />
       <main className={`min-h-0 flex-1 p-4 ${view === 'dashboard' ? 'overflow-y-auto' : ''}`}>
         {!report ? (
-          <p className="grid h-full place-items-center text-muted" role="status">{error ?? 'Crunching your history in-browser…'}</p>
-        ) : view === 'story' ? (
-          <StoryPlayer cards={cards} actions={(card, getNode) => <ExportButton key={card.id} id={card.id} getNode={getNode} />} />
+          <Loading text={error ?? 'Crunching your history in-browser…'} />
         ) : (
-          <Dashboard r={report} />
+          <Suspense fallback={<Loading text="Loading…" />}>{view === 'story' ? <StoryView r={report} /> : <Dashboard r={report} />}</Suspense>
         )}
       </main>
     </div>
   )
+}
+
+function Loading({ text }: { text: string }) {
+  return <p className="grid h-full place-items-center text-muted" role="status">{text}</p>
 }
