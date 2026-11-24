@@ -25,6 +25,6 @@ describe('prepare', () => {
   })
 
   it('writes ranked genre rows with lowercased artist keys', () => {
-    expect(genresToCsv({ Radiohead: ['alternative', 'rock'] })).toBe('"radiohead","alternative",1\n"radiohead","rock",2\n')
+    expect(genresToCsv({ 'Some Band': ['alternative', 'rock'] })).toBe('"some band","alternative",1\n"some band","rock",2\n')
   })
 })
