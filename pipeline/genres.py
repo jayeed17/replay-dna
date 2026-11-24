@@ -36,6 +36,8 @@ OVERRIDES = OUT / "genres_overrides.json"
 API = "https://ws.audioscrobbler.com/2.0/"
 MIN_INTERVAL = 0.25  # 4 req/s, under Last.fm's 5 req/s guideline
 USER_AGENT = "replay-dna/0.1 (personal listening analysis)"
+# Spotify placeholders for local files etc. Not real artists, so never looked up or listed as untagged.
+PLACEHOLDERS = {"unknown artist", "various artists", ""}
 
 
 def load_key() -> str:
@@ -59,7 +61,7 @@ def artist_minutes() -> Counter:
     for f in files:
         for row in json.loads(Path(f).read_text(encoding="utf-8")):
             a = row.get("artistName")
-            if a:
+            if a and a.strip().lower() not in PLACEHOLDERS:
                 mins[a] += row.get("msPlayed", 0) / 60000
     return mins
 

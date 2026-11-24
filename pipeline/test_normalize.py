@@ -11,6 +11,7 @@ class TestNormalize(unittest.TestCase):
             self.assertEqual(canonical(v), "r&b")
         self.assertEqual(canonical("Lo-Fi"), "lo-fi")
         self.assertEqual(canonical("Bangladeshi"), "bangla")
+        self.assertEqual(canonical("Bangladesh"), "bangla")
 
     def test_decades(self):
         self.assertEqual(decade("80s"), "1980s")

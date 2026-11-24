@@ -17,7 +17,7 @@ dashboard, all computed locally with DuckDB-WASM.
 ![Exported IG story](docs/screenshots/export.png)
 <!-- screenshot placeholder: docs/screenshots/export.png (one exported 1080×1920 card) -->
 
-**[Try the demo →](https://replay-dna.vercel.app)** <!-- update once deployed --> It ships with a fake listener, so no data needed.
+**Live demo:** _coming soon (Vercel link goes here)_. The demo runs on a fake listener, so no data needed.
 
 ## What you get
 

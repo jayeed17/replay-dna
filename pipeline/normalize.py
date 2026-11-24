@@ -29,7 +29,7 @@ ALIASES = {
     "post rock": "post-rock", "post punk": "post-punk", "pop punk": "pop punk",
     "drum and bass": "drum and bass", "drum n bass": "drum and bass", "dnb": "drum and bass", "d b": "drum and bass",
     "edm": "edm", "house music": "house",
-    "bangladeshi": "bangla", "bengali": "bangla", "bangla band": "bangla rock", "bangladeshi rock": "bangla rock",
+    "bangladeshi": "bangla", "bangladesh": "bangla", "bengali": "bangla", "bangla band": "bangla rock", "bangladeshi rock": "bangla rock",
     "bengali rock": "bangla rock", "bangla music": "bangla",
     "soundtrack": "soundtrack", "ost": "soundtrack", "film score": "soundtrack",
 }
