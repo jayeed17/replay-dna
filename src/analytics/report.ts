@@ -1,5 +1,6 @@
 import type { Dataset } from '../loaders'
 import { createEngine } from './db'
+import { findGap } from './gaps'
 import * as Q from './queries'
 
 export type Report = Awaited<ReturnType<typeof buildReport>>
@@ -8,6 +9,8 @@ export type Report = Awaited<ReturnType<typeof buildReport>>
 export async function buildReport(ds: Dataset, timeZone: string) {
   const e = await createEngine(ds, timeZone)
   const totals = await Q.totals(e)
+  const monthly = await Q.monthlyMinutes(e)
+  const gap = findGap(monthly, totals.first, totals.last)
   const hasGenres = Object.keys(ds.genres).length > 0
   return {
     timeZone,
@@ -19,7 +22,9 @@ export async function buildReport(ds: Dataset, timeZone: string) {
     clock: await Q.clock(e),
     biggestDay: await Q.biggestDay(e),
     obsession: await Q.obsession(e),
-    monthly: await Q.monthlyMinutes(e),
+    monthly,
+    gap,
+    gapSources: gap ? await Q.sourceMinutes(e, gap.months) : [],
     artistShare: await Q.artistShare(e),
     genreShare: hasGenres ? await Q.genreShare(e) : undefined,
     heatmap: await Q.hourWeekday(e),

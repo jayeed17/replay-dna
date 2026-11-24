@@ -2,7 +2,7 @@ import ReactECharts from 'echarts-for-react/lib/core'
 import type { ReactNode } from 'react'
 import type { Report } from '../analytics/report'
 import { echarts } from '../charts/echarts'
-import { asPercent, fmtDay, fmtShort, hourLabel, int, pct, weekRange } from './format'
+import { asPercent, fmtDay, fmtMonth, fmtShort, hourLabel, int, monthRange, pct, topPct, weekRange } from './format'
 import { ACCENT, StoryFrame, type Theme } from './StoryFrame'
 
 export interface Card { id: string; title: string; node: ReactNode }
@@ -12,7 +12,7 @@ const Big = ({ children, color }: { children: ReactNode; color?: string }) => (
 )
 const Sub = ({ children }: { children: ReactNode }) => <p className="mt-[40px] text-[52px] leading-tight font-semibold text-white/85">{children}</p>
 
-function RankList({ items, theme }: { items: { primary: string; secondary: string }[]; theme: Theme }) {
+function RankList({ items, theme }: { items: { primary: string; secondary: string; stats?: string }[]; theme: Theme }) {
   return (
     <ol className="mt-[24px] flex flex-col gap-[44px]">
       {items.map((it, i) => (
@@ -21,6 +21,7 @@ function RankList({ items, theme }: { items: { primary: string; secondary: strin
           <span className="min-w-0">
             <span className="block truncate text-[66px] leading-tight font-extrabold">{it.primary}</span>
             <span className="block truncate text-[40px] text-white/60">{it.secondary}</span>
+            {it.stats && <span className="block text-[36px] font-semibold" style={{ color: ACCENT[theme] }}>{it.stats}</span>}
           </span>
         </li>
       ))}
@@ -44,14 +45,14 @@ function Clock({ data, color }: { data: number[]; color: string }) {
 
 function Compare({ rows }: { rows: { label: string; then?: number; now: number; unit?: string }[] }) {
   return (
-    <div className="mt-[20px] flex flex-col gap-[30px]">
+    <div className="mt-[10px] flex flex-col gap-[18px]">
       <div className="grid grid-cols-[1fr_220px_220px] text-[34px] font-bold uppercase tracking-widest text-white/50">
         <span /> <span className="text-right">2025</span> <span className="text-right">Now</span>
       </div>
       {rows.map((r) => {
         const up = r.then !== undefined && r.now >= r.then
         return (
-          <div key={r.label} className="grid grid-cols-[1fr_220px_220px] items-baseline border-t border-white/15 pt-[26px]">
+          <div key={r.label} className="grid grid-cols-[1fr_220px_220px] items-baseline border-t border-white/15 pt-[18px]">
             <span className="text-[46px] font-semibold">{r.label}</span>
             <span className="text-right text-[50px] text-white/60">{r.then === undefined ? '—' : int(r.then) + (r.unit ?? '')}</span>
             <span className="text-right text-[56px] font-black" style={{ color: r.then === undefined ? '#fff' : up ? ACCENT.lime : ACCENT.pink }}>
@@ -93,7 +94,8 @@ export function buildCards(r: Report): Card[] {
 
   add('songs', 'Top songs', (
     <StoryFrame theme="violet" kicker="Your top songs">
-      <RankList theme="violet" items={r.topTracks.map((s) => ({ primary: s.name, secondary: `${s.artist} · ${int(s.plays)} plays` }))} />
+      <p className="mb-[30px] text-[36px] text-white/60">Ranked by plays (30s or more)</p>
+      <RankList theme="violet" items={r.topTracks.map((s) => ({ primary: s.name, secondary: s.artist ?? "", stats: `${int(s.plays)} plays · ${int(s.minutes)} min` }))} />
     </StoryFrame>
   ))
 
@@ -145,6 +147,31 @@ export function buildCards(r: Report): Card[] {
     </StoryFrame>
   ))
 
+  if (r.gap) {
+    const g = r.gap
+    const max = Math.max(...r.monthly.map((m) => m.minutes))
+    // When another source (e.g. Apple Music) has minutes in the gap, show that it filled the silence.
+    const others = r.gapSources.filter((x) => x.source !== 'spotifyBasic' && x.source !== 'spotifyExtended')
+    add('gap', 'The gap', (
+      <StoryFrame theme="cyan" kicker="The gap">
+        <p className="text-[104px] leading-[1] font-black">{monthRange(g.months)}</p>
+        <p className="mt-[30px] text-[72px] leading-tight font-extrabold" style={{ color: ACCENT.cyan }}>You went quiet…</p>
+        <p className="text-[56px] font-semibold text-white/70">{others.length ? `…on Spotify. ${others.map((o) => `${int(o.minutes)} min on ${o.source === 'appleMusic' ? 'Apple Music' : o.source}`).join(', ')}.` : '(Apple Music era?)'}</p>
+        <div className="mt-[70px] flex h-[360px] items-end gap-[14px]" aria-hidden>
+          {r.monthly.map((m) => (
+            <div key={m.month} className="flex flex-1 flex-col items-center gap-[12px]">
+              <div className="w-full rounded-t-[10px]" style={{ height: `${Math.max(2, (m.minutes / max) * 300)}px`, background: g.months.includes(m.month) ? ACCENT.cyan : 'rgba(255,255,255,.22)' }} />
+              <span className="text-[22px] text-white/50">{fmtMonth(m.month).slice(0, 3)}</span>
+            </div>
+          ))}
+        </div>
+        <Sub>
+          <b style={{ color: ACCENT.cyan }}>−{pct((1 - g.ratio) * 100)}</b> vs your usual: {int(g.gapPerDay)} min/day instead of {int(g.usualPerDay)}.
+        </Sub>
+      </StoryFrame>
+    ))
+  }
+
   const o = r.obsession
   add('obsession', 'Obsession of the year', (
     <StoryFrame theme="pink" kicker="Obsession of the year">
@@ -178,6 +205,7 @@ export function buildCards(r: Report): Card[] {
             Your 2025 #1, <b>{wTop}</b>, is now {r.artistRanks[wTop] ? <b style={{ color: ACCENT.lime }}>#{r.artistRanks[wTop]}</b> : 'off your charts'}.
           </Sub>
         )}
+        <p className="mt-[50px] text-[32px] text-white/45">* Wrapped ≈ Jan – mid Nov 2025; “Now” = this export’s rolling 12 months.</p>
       </StoryFrame>
     ))
   }
@@ -198,6 +226,14 @@ export function buildCards(r: Report): Card[] {
             <p className="mt-[8px] line-clamp-2 text-[64px] leading-tight font-black capitalize">{v}</p>
           </div>
         ))}
+        {r.wrapped?.topPercentileFan !== undefined && (
+          <div className="col-span-2">
+            <p className="text-[34px] font-bold uppercase tracking-widest text-white/50">Superfan · Wrapped 2025</p>
+            <p className="mt-[8px] text-[64px] leading-tight font-black">
+              Top <span style={{ color: ACCENT.sunset }}>{topPct(r.wrapped.topPercentileFan)}</span> fan of {(r.wrapped.topArtistUris[0] && r.uriNames[r.wrapped.topArtistUris[0]]) || 'your #1 artist'}
+            </p>
+          </div>
+        )}
       </div>
       <p className="mt-[120px] text-[44px] text-white/70">Made with Replay DNA: analyzed in my browser, never uploaded.</p>
     </StoryFrame>

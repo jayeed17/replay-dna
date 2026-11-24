@@ -9,6 +9,8 @@ export interface Wrapped {
   listeningDays?: number
   streakDays?: number
   percentNight?: number
+  /** e.g. 0.02 means you were in the top 0.02% of listeners of your #1 artist */
+  topPercentileFan?: number
   topArtistUris: string[]
   topTrackUris: string[]
 }
@@ -48,6 +50,7 @@ export function parseWrapped(text: string): Wrapped {
     listeningDays: num(w?.party?.totalNumListeningDays),
     streakDays: num(w?.party?.streakNumListeningDays),
     percentNight: num(w?.party?.percentListenedNight),
+    topPercentileFan: num(w?.topArtists?.topNPercentileFan),
     topArtistUris: strs(w?.topArtists?.topArtistUris),
     topTrackUris: strs((w?.topTracks?.topTracks ?? []).map((t: Any) => t?.trackUri)),
   }

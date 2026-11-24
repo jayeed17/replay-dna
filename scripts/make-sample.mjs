@@ -31,7 +31,8 @@ for (let day = 0; day < 365; day++) {
   const dow = new Date(START + day * 864e5).getUTCDay()
   if (rnd() < 0.04) continue // some silent days
   let n = Math.round((dow === 0 || dow === 6 ? 60 : 40) * (0.4 + rnd() * 1.2))
-  if (day === 290) n = 230 // a big day
+  if (day >= 251 && day <= 311) n = Math.round(n * 0.12) // Aug–Sep: 'the gap'
+  if (day === 330) n = 230 // a big day
   for (let i = 0; i < n; i++) {
     const hr = weighted([...Array(24).keys()], hourW)
     const ts = START + day * 864e5 + hr * 36e5 + Math.floor(rnd() * 36e5)
@@ -56,7 +57,7 @@ for (let i = 0; i * 10000 < out.length; i++) write(`StreamingHistory_music_${i}.
 
 const uri = (k, s) => `spotify:${k}:${Buffer.from(s).toString('base64url').padEnd(22, 'x').slice(0, 22)}`
 write('Wrapped2025.json', {
-  topArtists: { topArtistUris: artists.slice(1, 6).map((a) => uri('artist', a.name)), numUniqueArtists: 96, topNPercentileFan: 2.1, topArtistMsPlayed: 21_000_000 },
+  topArtists: { topArtistUris: artists.slice(1, 6).map((a) => uri('artist', a.name)), numUniqueArtists: 96, topNPercentileFan: 0.5, topArtistMsPlayed: 21_000_000 },
   topTracks: { topTracks: artists.slice(1, 6).map((a) => ({ trackUri: uri('track', a.tracks[0]), count: 60, msPlayed: 9_000_000 })), numUniqueTracks: 610 },
   yearlyMetrics: { totalMsListened: 31_500 * 60000 },
   topGenres: { topGenres: [], totalNumGenres: 18 },

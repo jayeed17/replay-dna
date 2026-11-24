@@ -11,6 +11,17 @@ export const int = (n: number) => Math.round(n).toLocaleString('en-US')
 export const pct = (n: number, digits = 0) => `${n.toFixed(digits)}%`
 export const hourLabel = (h: number) => `${h % 12 || 12}${h < 12 ? 'am' : 'pm'}`
 
+/** "Aug – Sep 2026" / "Aug 2026" */
+export function monthRange(months: string[]) {
+  const f = (ym: string, year: boolean) => utc({ month: 'short', ...(year ? { year: 'numeric' } : {}) }).format(new Date(`${ym}-01T00:00:00Z`))
+  const a = months[0], b = months.at(-1)!
+  if (a === b) return f(a, true)
+  return a.slice(0, 4) === b.slice(0, 4) ? `${f(a, false)} – ${f(b, true)}` : `${f(a, true)} – ${f(b, true)}`
+}
+
+/** 0.02 -> "0.02%", 2.1 -> "2.1%" */
+export const topPct = (v: number) => `${Number(v.toPrecision(2))}%`
+
 export function weekRange(start: Date) {
   const end = new Date(start.getTime() + 6 * 864e5)
   return `${utc({ month: 'short', day: 'numeric' }).format(start)} – ${utc({ month: 'short', day: 'numeric' }).format(end)}`

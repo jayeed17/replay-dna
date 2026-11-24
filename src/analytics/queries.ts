@@ -143,6 +143,14 @@ export async function skipRate(e: Engine): Promise<{ month: string; pct: number;
   return rows.map((r) => ({ month: monthKey(r.month), pct: n(r.pct) * 100, streams: n(r.streams) }))
 }
 
+/** Minutes per source within the given months, e.g. to show another platform filling a gap. */
+export async function sourceMinutes(e: Engine, months: string[]): Promise<{ source: string; minutes: number }[]> {
+  if (!months.length) return []
+  const list = months.map((m) => `'${m.replace(/[^0-9-]/g, '')}'`).join(', ')
+  const rows = await e.query(`SELECT source, sum(mins) AS m FROM s WHERE strftime(month, '%Y-%m') IN (${list}) GROUP BY source ORDER BY m DESC`)
+  return rows.map((r) => ({ source: String(r.source), minutes: n(r.m) }))
+}
+
 /** artist -> rank by minutes (1-based), for the top `limit` artists. */
 export async function artistRanks(e: Engine, limit = 500): Promise<Record<string, number>> {
   const rows = await e.query(`SELECT artist, row_number() OVER (ORDER BY sum(mins) DESC) AS r FROM s GROUP BY artist ORDER BY r LIMIT ${limit}`)
