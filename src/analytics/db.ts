@@ -1,24 +1,45 @@
 import * as duckdb from '@duckdb/duckdb-wasm'
-import mvpWasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url'
-import mvpWorker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url'
-import ehWasm from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url'
-import ehWorker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 import type { Dataset } from '../loaders'
 import { PLAY_THRESHOLD_MS } from '../loaders'
 import { genresToCsv, PLAY_COLUMNS, playsToCsv } from './prepare'
 
-// Bundles are served from our own origin: no CDN, and nothing about your data is sent anywhere.
-const BUNDLES: duckdb.DuckDBBundles = {
-  mvp: { mainModule: mvpWasm, mainWorker: mvpWorker },
-  eh: { mainModule: ehWasm, mainWorker: ehWorker },
+/**
+ * Where the DuckDB engine *code* comes from (your data is never sent anywhere either way):
+ *  - default: bundled and served from this site's own origin
+ *  - VITE_DUCKDB_SOURCE=cdn: fetched from cdn.jsdelivr.net (smaller deploy, e.g. if a host rejects ~35 MB .wasm files)
+ * The env var is inlined at build time, so the unused branch (and its .wasm files) is dropped.
+ */
+export const DUCKDB_SOURCE: 'local' | 'cdn' = import.meta.env.VITE_DUCKDB_SOURCE === 'cdn' ? 'cdn' : 'local'
+
+async function bundles(): Promise<duckdb.DuckDBBundles> {
+  if (import.meta.env.VITE_DUCKDB_SOURCE === 'cdn') return duckdb.getJsDelivrBundles()
+  const [mvpWasm, mvpWorker, ehWasm, ehWorker] = await Promise.all([
+    import('@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url'),
+    import('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url'),
+    import('@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url'),
+    import('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'),
+  ])
+  return {
+    mvp: { mainModule: mvpWasm.default, mainWorker: mvpWorker.default },
+    eh: { mainModule: ehWasm.default, mainWorker: ehWorker.default },
+  }
+}
+
+/** Cross-origin workers can't be constructed directly; wrap the CDN script in a same-origin blob. */
+function makeWorker(url: string): Worker {
+  if (new URL(url, location.href).origin === location.origin) return new Worker(url)
+  const blob = URL.createObjectURL(new Blob([`importScripts(${JSON.stringify(url)});`], { type: 'text/javascript' }))
+  const w = new Worker(blob)
+  URL.revokeObjectURL(blob)
+  return w
 }
 
 let dbPromise: Promise<duckdb.AsyncDuckDB> | undefined
 
 function getDb() {
   dbPromise ??= (async () => {
-    const bundle = await duckdb.selectBundle(BUNDLES)
-    const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), new Worker(bundle.mainWorker!))
+    const bundle = await duckdb.selectBundle(await bundles())
+    const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), makeWorker(bundle.mainWorker!))
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
     await db.open({ query: { castBigIntToDouble: true } })
     return db
