@@ -25,7 +25,6 @@ interface Props {
 export function StoryPlayer({ cards, actions }: Props) {
   const [[i, dir], setPos] = useState<[number, number]>([0, 0])
   const box = useRef<HTMLDivElement>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
   const scale = useFitScale(box)
 
   const go = useCallback((d: number) => setPos(([cur]) => [Math.max(0, Math.min(cards.length - 1, cur + d)), d]), [cards.length])
@@ -80,7 +79,7 @@ export function StoryPlayer({ cards, actions }: Props) {
               aria-label={`${i + 1} of ${cards.length}: ${card.title}`}
             >
               <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-                <div ref={cardRef}>{card.node}</div>
+                <div data-card={card.id}>{card.node}</div>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -94,7 +93,7 @@ export function StoryPlayer({ cards, actions }: Props) {
         <button onClick={() => go(-1)} disabled={i === 0} className="rounded-full bg-panel px-4 py-2 text-sm font-semibold disabled:opacity-30">← Prev</button>
         <span className="w-20 text-center text-sm text-muted tabular-nums">{i + 1} / {cards.length}</span>
         <button onClick={() => go(1)} disabled={i === cards.length - 1} className="rounded-full bg-panel px-4 py-2 text-sm font-semibold disabled:opacity-30">Next →</button>
-        {actions?.(card, () => cardRef.current)}
+        {actions?.(card, () => box.current?.querySelector<HTMLDivElement>(`[data-card="${CSS.escape(card.id)}"]`) ?? null)}
       </div>
     </section>
   )

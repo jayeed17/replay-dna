@@ -3,6 +3,7 @@ import { buildReport, type Report } from './analytics/report'
 import { TopBar, type View } from './components/TopBar'
 import { UploadScreen } from './components/UploadScreen'
 import { loadFiles, type Dataset, type InputFile } from './loaders'
+import { ExportButton } from './export/ExportButton'
 import { buildCards } from './story/cards'
 import { StoryPlayer } from './story/StoryPlayer'
 import { demoFiles } from './upload/demo'
@@ -64,7 +65,7 @@ export default function App() {
         {!report ? (
           <p className="grid h-full place-items-center text-muted" role="status">{error ?? 'Crunching your history in-browser…'}</p>
         ) : view === 'story' ? (
-          <StoryPlayer cards={cards} />
+          <StoryPlayer cards={cards} actions={(card, getNode) => <ExportButton key={card.id} id={card.id} getNode={getNode} />} />
         ) : (
           <p className="grid h-full place-items-center text-muted">Dashboard coming next.</p>
         )}
