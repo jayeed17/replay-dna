@@ -42,11 +42,11 @@ export function playsToCsv(plays: Play[], timeZone: string): string {
   const lines = plays.map((p) =>
     [p.ts, local(p.ts), q(p.artist), q(p.track), q(p.album), Math.round(p.ms_played), b(p.skipped), b(p.shuffle), q(p.platform), q(p.source)].join(','),
   )
-  return lines.join('\n') + '\n'
+  return lines.length ? lines.join('\n') + '\n' : ''
 }
 
 export function genresToCsv(genres: GenreMap): string {
   const lines: string[] = []
   for (const [artist, tags] of Object.entries(genres)) cleanTags(tags).forEach((g, i) => lines.push(`${q(artist.toLowerCase())},${q(g)},${i + 1}`))
-  return lines.join('\n') + '\n'
+  return lines.length ? lines.join('\n') + '\n' : ''
 }

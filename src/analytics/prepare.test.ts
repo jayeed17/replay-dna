@@ -19,6 +19,11 @@ describe('prepare', () => {
     expect(cleanTags(['seen live', 'Indie Pop', 'indie pop', '2010s', 'dream pop', 'shoegaze', 'rock'])).toEqual(['indie pop', 'dream pop', 'shoegaze'])
   })
 
+  it('writes an empty file for no genres (regression: DuckDB sniffer failed on "\\n")', () => {
+    expect(genresToCsv({})).toBe('')
+    expect(playsToCsv([], 'UTC')).toBe('')
+  })
+
   it('writes ranked genre rows with lowercased artist keys', () => {
     expect(genresToCsv({ Radiohead: ['alternative', 'rock'] })).toBe('"radiohead","alternative",1\n"radiohead","rock",2\n')
   })

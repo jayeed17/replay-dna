@@ -34,20 +34,26 @@ export interface Engine {
 
 const cols = (c: Record<string, string>) => `{${Object.entries(c).map(([k, v]) => `'${k}': '${v}'`).join(', ')}}`
 
+/** Strict, non-sniffing CSV read. An empty file yields an empty table with the right schema. */
+const readCsv = (file: string, empty: boolean, columns: Record<string, string>) =>
+  empty
+    ? `SELECT ${Object.entries(columns).map(([k, v]) => `NULL::${v} AS ${k}`).join(', ')} WHERE false`
+    : `SELECT * FROM read_csv('${file}', auto_detect = false, header = false, delim = ',', quote = '"', escape = '"', columns = ${cols(columns)})`
+const GENRE_COLUMNS = { artist_key: 'VARCHAR', genre: 'VARCHAR', rnk: 'INTEGER' }
+
 /** Load a dataset into a fresh in-memory DuckDB and return a query handle. */
 export async function createEngine(ds: Dataset, timeZone: string): Promise<Engine> {
   const db = await getDb()
   const conn = await db.connect()
   await conn.query(`SET autoinstall_known_extensions = false; SET autoload_known_extensions = false;`)
 
-  await db.registerFileText('plays.csv', playsToCsv(ds.plays, timeZone))
-  await db.registerFileText('genres.csv', genresToCsv(ds.genres))
+  const playsCsv = playsToCsv(ds.plays, timeZone)
+  const genresCsv = genresToCsv(ds.genres)
+  await db.registerFileText('plays.csv', playsCsv)
+  await db.registerFileText('genres.csv', genresCsv)
   await conn.query(`
-    CREATE OR REPLACE TABLE streams AS
-      SELECT * FROM read_csv('plays.csv', header = false, quote = '"', escape = '"', columns = ${cols(PLAY_COLUMNS)});
-    CREATE OR REPLACE TABLE artist_genre AS
-      SELECT * FROM read_csv('genres.csv', header = false, quote = '"', escape = '"',
-        columns = {'artist_key': 'VARCHAR', 'genre': 'VARCHAR', 'rnk': 'INTEGER'});
+    CREATE OR REPLACE TABLE streams AS ${readCsv('plays.csv', !playsCsv, PLAY_COLUMNS)};
+    CREATE OR REPLACE TABLE artist_genre AS ${readCsv('genres.csv', !genresCsv, GENRE_COLUMNS)};
     -- music streams with handy derived columns
     CREATE OR REPLACE VIEW s AS
       SELECT *, ms / 60000.0 AS mins, ms >= ${PLAY_THRESHOLD_MS} AS is_play, lower(artist) AS artist_key,
