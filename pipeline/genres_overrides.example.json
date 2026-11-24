@@ -1,0 +1,6 @@
+{
+  "_comment": "Copy to data/derived/genres_overrides.json (gitignored). Overrides replace Last.fm tags. Up to 3 tags, strongest first; optional era.",
+  "Some Bangla Band": ["bangla rock", "alternative rock"],
+  "Some Singer": { "tags": ["bangla", "folk"], "era": "2000s" },
+  "Weighted Example": { "tags": [{ "tag": "indie pop", "weight": 1.0 }, { "tag": "dream pop", "weight": 0.4 }] }
+}

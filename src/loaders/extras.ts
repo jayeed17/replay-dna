@@ -71,13 +71,23 @@ export function parseLibrary(text: string): Record<string, string> {
   return out
 }
 
+/**
+ * Accepts the pipeline format `{ artists: { name: { primary, tags: [{tag, weight}], era } } }`
+ * as well as a plain `{ name: ["tag", ...] }`. Returns tags ordered with the primary first;
+ * "unknown" is dropped so those artists count as untagged.
+ */
 export function parseGenres(text: string): GenreMap {
   const g: Any = JSON.parse(text)
   const out: GenreMap = {}
   const src = g?.artists ?? g
   for (const [k, v] of Object.entries(src ?? {})) {
-    const tags = Array.isArray(v) ? v : (v as Any)?.tags
-    if (Array.isArray(tags)) out[k.toLowerCase()] = tags.filter((x: unknown): x is string => typeof x === 'string')
+    if (k.startsWith('_')) continue
+    const raw: unknown[] = Array.isArray(v) ? v : Array.isArray((v as Any)?.tags) ? (v as Any).tags : []
+    const tags = raw.map((t) => (typeof t === 'string' ? t : (t as Any)?.tag)).filter((t): t is string => typeof t === 'string' && t !== 'unknown')
+    const primary = (v as Any)?.primary
+    if (typeof primary === 'string' && primary !== 'unknown') tags.unshift(primary)
+    const uniq = [...new Set(tags)]
+    if (uniq.length) out[k.toLowerCase()] = uniq
   }
   return out
 }

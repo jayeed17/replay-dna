@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadFiles, parseWrapped, type InputFile } from './index'
+import { loadFiles, parseGenres, parseWrapped, type InputFile } from './index'
 import { parseEndTime, spotifyBasic } from './spotifyBasic'
 
 const file = (name: string, body: unknown): InputFile & { opened: boolean } => {
@@ -66,5 +66,18 @@ describe('parseWrapped', () => {
     expect(w.totalMinutes).toBe(100)
     expect(w.uniqueArtists).toBe(9)
     expect(w.topArtistUris).toEqual(['u1'])
+  })
+})
+
+describe('parseGenres', () => {
+  it('reads the pipeline format, primary first, unknown dropped', () => {
+    const g = parseGenres(JSON.stringify({ artists: {
+      Band: { primary: 'classic rock', tags: [{ tag: 'rock', weight: 1 }, { tag: 'classic rock', weight: 0.6 }], era: '1970s' },
+      Nobody: { primary: 'unknown', tags: [{ tag: 'unknown', weight: 1 }] },
+    } }))
+    expect(g).toEqual({ band: ['classic rock', 'rock'] })
+  })
+  it('still reads the plain format', () => {
+    expect(parseGenres(JSON.stringify({ X: ['a', 'b'] }))).toEqual({ x: ['a', 'b'] })
   })
 })

@@ -6,3 +6,5 @@ dist/
 *.zip
 !.env.example
 *.tsbuildinfo
+data/derived/
+__pycache__/
