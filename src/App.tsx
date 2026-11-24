@@ -3,6 +3,7 @@ import { buildReport, type Report } from './analytics/report'
 import { TopBar, type View } from './components/TopBar'
 import { UploadScreen } from './components/UploadScreen'
 import { loadFiles, type Dataset, type InputFile } from './loaders'
+import { Dashboard } from './dashboard/Dashboard'
 import { ExportButton } from './export/ExportButton'
 import { buildCards } from './story/cards'
 import { StoryPlayer } from './story/StoryPlayer'
@@ -61,13 +62,13 @@ export default function App() {
   return (
     <div className="flex h-dvh flex-col">
       <TopBar view={view} onView={setView} timeZone={timeZone} onTimeZone={setTimeZone} isDemo={isDemo} onReset={() => (setData(undefined), setReport(undefined))} />
-      <main className="min-h-0 flex-1 p-4">
+      <main className={`min-h-0 flex-1 p-4 ${view === 'dashboard' ? 'overflow-y-auto' : ''}`}>
         {!report ? (
           <p className="grid h-full place-items-center text-muted" role="status">{error ?? 'Crunching your history in-browser…'}</p>
         ) : view === 'story' ? (
           <StoryPlayer cards={cards} actions={(card, getNode) => <ExportButton key={card.id} id={card.id} getNode={getNode} />} />
         ) : (
-          <p className="grid h-full place-items-center text-muted">Dashboard coming next.</p>
+          <Dashboard r={report} />
         )}
       </main>
     </div>
