@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { UploadScreen } from './components/UploadScreen'
 import { loadFiles, type Dataset, type InputFile } from './loaders'
 import { demoFiles } from './upload/demo'
+import { buildReport, type Report } from './analytics/report'
 
 export default function App() {
   const [data, setData] = useState<Dataset>()
+  const [report, setReport] = useState<Report>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
 
@@ -23,6 +25,9 @@ export default function App() {
         return
       }
       setData(ds)
+      const r = await buildReport(ds, Intl.DateTimeFormat().resolvedOptions().timeZone)
+      setReport(r)
+      if (import.meta.env.DEV) (window as unknown as { __report: Report }).__report = r
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -37,6 +42,7 @@ export default function App() {
       <p>
         Loaded {data.plays.length.toLocaleString()} streams from {data.report.used.length} files ({data.report.ignored} ignored).
       </p>
+      <pre className="mt-4 text-xs">{report ? 'report ready' : 'crunching…'}</pre>
     </main>
   )
 }
